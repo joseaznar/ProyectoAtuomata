@@ -6,6 +6,9 @@ public class main {
 
 		 AutomataT3 aut= new AutomataT3();
 
+     aut.setAutomat("test.txt");
+
+     aut.GetDeterministicAut();
 
 
    }
