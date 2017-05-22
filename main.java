@@ -1,4 +1,6 @@
 import java.io.*;
+import java.awt.*;
+import java.util.*;
 
 public class main {
 
@@ -8,7 +10,11 @@ public class main {
      String file=("test.txt");
      aut.setAutomat(file);
 
-     aut.GetDeterministicAut();
+     aut = aut.GetDeterministicAut();
+System.out.println("//////////////////////////////////////////");
+     for(States s: aut.minimiza(aut.getSatates())){
+       s.getInfo();
+     }
 
 
    }

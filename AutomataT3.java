@@ -1,7 +1,10 @@
+import java.awt.*;
 import java.io.*;
 import java.util.*;
 
 public class AutomataT3{
+
+
 	private ArrayList<States> estados;
 	private int names;
 	private boolean isDeterministic;
@@ -144,6 +147,8 @@ public class AutomataT3{
 			System.out.println("Estados de aceptación: "+aceptacion );
 			System.out.println("Estados: "+estadosRev);
 			System.out.println("Es determinista: "+((isDeterministic) ? "Si" : "No") );
+			auxNames-=names;
+			System.out.println(estadosRev.length()-auxNames);
 			//si el numero de estados descritos en la tabla
 			//es menor al numero de estados descritos en la tabla, significa que existe un estado vacio
 			if(estadosRev.length()-auxNames>0){
@@ -175,12 +180,15 @@ public class AutomataT3{
 
 }
 
-public void GetDeterministicAut(){
+public AutomataT3 GetDeterministicAut(){
 
 	AutomataT3 aux = new AutomataT3();
 	if(isDeterministic){
 		// si es determinista se devuelve el mismo automata que se le dio como input
 		writeAutomata(this.estados,"Deterministic");
+		for(States s: estados){
+			aux.addUndefinedState(s);
+		}
 	}else{
 		/////////////////////////////////////////////////////////////
 		//////////////////////////////////////////////////////
@@ -256,7 +264,9 @@ public void GetDeterministicAut(){
 
 
 				////// se insertan los estados no definidos
-				while(!undefinedStates.isEmpty()){
+				int sCount=0;
+
+				while(!undefinedStates.isEmpty() ){
 					System.out.println("Undefined size:"+undefinedStates.size());
 
 					Object [] auxStates=undefinedStates.toArray();
@@ -267,26 +277,31 @@ public void GetDeterministicAut(){
 						definedStates.add(auxStates[i].toString());
 					}
 					undefinedStates=new  ArrayList<String>();
+					//se busca en los nuevos estados si los estados a los que llegan no estan definidos todavia
 					for(States s: aux.getSatates()){
-						System.out.println("State Name: "+ s.getName());
-						String auxOutName="";
 						for(Outputs o: s.getOutputs()){
-							if(!definedStates.contains(o.getNextStateName())){
-								auxOutName+=o.getNextStateName();
+							System.out.println("Esta definido el estado: "+o.getNextStateName()+" "+ ((definedStates.contains(o.getNextStateName())) ? "-- Si" : "// No ") );
+							if(!definedStates.contains(o.getNextStateName()) && !undefinedStates.contains(o.getNextStateName()) ){
+								undefinedStates.add(o.getNextStateName());
 							}
 						}
-						undefinedStates.add(sortLabels(auxOutName));
-
 					}
+
 				}
 
 
-
+		//su variable para saber si es determinista cambia a cierta
+		isDeterministic=true;
 
 
 		//Revisar estados
+		aux= aux.renameIt(aux);
+
 		aux.getStatesInfo();
+		writeAutomata(aux.getSatates(),"Deterministic");
+
 	}
+	return aux;
 }
 
 public void writeAutomata(ArrayList<States> states, String name){
@@ -369,13 +384,14 @@ public String sortLabels(String input){
 		arrChar[i]=input.charAt(i);
 	}
 	Arrays.sort(arrChar);
-	for (int i=0; i<arrChar.length; i++) {
-		if(i>0 && arrChar[i-1]!=arrChar[i]){
-			res+=arrChar[i];
-		}else if(i==0) {
-			res+=arrChar[i];
-		}
 
+
+	Set<Character> charSet = new LinkedHashSet<Character>();
+	for (char c : arrChar) {
+    charSet.add(c);
+	}
+	for (Character character : charSet) {
+    res+=character;
 	}
 	return res;
 }
@@ -396,7 +412,7 @@ public States createUndefinedState(String name){
 	int auxW0=0;
 	int auxW1=0;
 
-	for(States s:estados){
+	for(States s: this.estados){
 		// se considera que un automata al definirse tiene nombres de un caracter de longitud
 		if( name.indexOf(s.getName().charAt(0))>=0 ){
 			for(Outputs o: s.getOutputs()){
@@ -414,9 +430,11 @@ public States createUndefinedState(String name){
 						auxW1=1;
 					}
 				}
+
 			}
 		}
 	}
+
 	auxNameR0= sortLabels(auxNameR0);
 	auxNameR1= sortLabels(auxNameR1);
 
@@ -432,5 +450,206 @@ public States createUndefinedState(String name){
 public void addUndefinedState(States  s){
 	estados.add(s);
 }
+
+public AutomataT3 renameIt(AutomataT3 a){
+	int auxNames= names;
+	ArrayList<States> auxS=a.getSatates();
+	String [][] table= new String[a.getSatates().size()][];
+	AutomataT3 aux =new AutomataT3();
+	for (int i=0; i<table.length; i++ ) {
+		table[i]=new String[2];
+		table[i][0]=auxS.get(i).getName();
+		table[i][1]=Character.toString((char) auxNames);
+		auxNames++;
+	}
+	String auxEntrada="";
+	String auxAcept="";
+	for(States s: auxS){
+		int name=0;
+		while(name<table.length && !table[name][0].equals(s.getName())){
+			name++;
+		}
+
+		States temp= new States(table[name][1]);
+		if(s.esEntrada()){
+			auxEntrada+=table[name][1];
+		}
+		if(s.esAceptacion()){
+			auxAcept+=table[name][1];
+		}
+		for(Outputs o: s.getOutputs()){
+			int nameO=0;
+
+			while(nameO<table.length && !table[nameO][0].equals(o.getNextStateName()) ) {
+				System.out.println("OutName: "+o.getNextStateName());
+				System.out.println("Compare to:" +table[nameO][0]);
+				nameO++;
+			}
+			temp.crateOuts(table[nameO][1], o.getReadsBit(), o.getWritesBit());
+		}
+		temp.soyEntrada(auxEntrada);
+		temp.soyAceptacion(auxAcept);
+		aux.addUndefinedState(temp);
+	}
+
+	return aux;
+}
+
+public ArrayList<States> minimiza(ArrayList<States> fda) {
+
+	ArrayList<HashSet<HashSet<Integer>>> particiones = new ArrayList<HashSet<HashSet<Integer>>>();
+
+	int tam = 0;
+	    //llenar con las posibles paritciones iniciales
+	//las dividimos en las que escriben 00 , 01, 10 y 11
+
+	/*HashSet<Integer> inicialCC = new HashSet<Integer>();
+	HashSet<Integer> inicialUC = new HashSet<Integer>();
+	HashSet<Integer> inicialCU = new HashSet<Integer>();
+	HashSet<Integer> inicialUU = new HashSet<Integer>();*/
+	HashSet<Integer> aceptacion = new HashSet<Integer>();
+	HashSet<Integer> noAceptacion = new HashSet<Integer>();
+
+
+	for (int i = 0; i < fda.size(); i++) {
+
+
+
+	    if(fda.get(i).esAceptacion())
+		aceptacion.add(i);
+	    else
+		noAceptacion.add(i);
+	}
+
+	//particion inicial
+	HashSet<HashSet<Integer>> inicial = new HashSet<>();
+	//solo agregamos conjuntos de estados existentes
+	//anadimos la primer particion a la lista de particiones
+	//System.out.println(aceptacion);
+	inicial.add(aceptacion);
+	inicial.add(noAceptacion);
+	particiones.add(inicial);
+
+	int index = 0;
+	ArrayList<Point> opciones;
+	//procedemos a reducir
+	do {
+
+	    HashSet<HashSet<Integer>> pOriginal = particiones.get(index);
+	    //HashSet<String> pSiguiente =  new HashSet<String>();
+	    opciones = new ArrayList<>();
+	    //ArrayList<Outputs> temp = new ArrayList<>();
+	    //revisamos para cada estado la posible combinacion de siguientes estados en base a la aprticion a la que irian
+	    for(States s:fda){
+				//temp = s.getOutputs();
+				//sacamos los nombres de los estados a los que va
+				String entraCero = s.getOutputs().get(0).getReadsBit()== 0 ? s.getOutputs().get(0).getNextStateName() : s.getOutputs().get(1).getNextStateName();
+				String entraUno = s.getOutputs().get(0).getReadsBit() == 1 ? s.getOutputs().get(0).getNextStateName() : s.getOutputs().get(1).getNextStateName();
+
+				int a=0,b=0;
+				int i=0;
+				//buscamos a que particiones pertenecen los estados a los que va
+				for(HashSet<Integer> subc:pOriginal){
+				    for(Integer indice : subc){
+							if(fda.get(indice).getName().equals(entraCero) )
+							    a = i;
+							if( fda.get(indice).getName().equals(entraUno))
+							    b= i;
+				    }
+				    i++;
+				}
+				//solo añadimos el id de la particion si no esta en el conjunto
+				Point id = new Point(a,b);
+				//System.out.println(id);
+				if(!opciones.contains(id))
+				    opciones.add(id);
+				//preparamos la nueva particion
+	    }
+
+	    ArrayList<HashSet<Integer>> lista = new ArrayList<>();
+	    for(int i=0;i<opciones.size();i++)
+		    lista.add(new HashSet<Integer>());
+	    //asignamos los subconjuntos en la nueva particion
+	    int k=0;
+	    for(States s:fda){
+
+				String entraCero = s.getOutputs().get(0).getReadsBit()== 0 ? s.getOutputs().get(0).getNextStateName() : s.getOutputs().get(1).getNextStateName();
+				String entraUno = s.getOutputs().get(0).getReadsBit() == 1 ? s.getOutputs().get(0).getNextStateName() : s.getOutputs().get(1).getNextStateName();
+
+				int a=0,b=0;
+				int i=0;
+				//buscamos a que particiones pertenecen los estados a los que va
+				for(HashSet<Integer> subc:pOriginal){
+				    for(Integer indice : subc){
+						if(fda.get(indice).getName().equals(entraCero) )
+						    a = i;
+						if( fda.get(indice).getName().equals(entraUno))
+						    b= i;
+					  }
+				    i++;
+				}
+				Point id = new Point(a,b);
+				//int cual=0;
+				if(!opciones.contains(id)){
+		    	lista.get(opciones.indexOf(id)).add(k);
+				}
+				k++;
+	    }
+	    //CREAMOS LA NUEVA PARTICION
+	    HashSet<HashSet<Integer>> nuevap = new HashSet<>();
+
+	    for(HashSet<Integer> l:lista){
+		nuevap.add(l);
+	    }
+
+	    particiones.add(nuevap);
+	    index++;
+	    //paramos cuando el numero de conjuntos en dos particiones sucesivas no sean modificados
+	} while (particiones.get(particiones.size() - 1).size() != particiones.get(particiones.size() - 2).size());
+
+			//return particiones.get(particiones.size() - 1);
+			HashSet<HashSet<Integer>> ultimo = particiones.get(particiones.size() - 1);
+
+			// creamoslos estados ddel nuevo automata
+			ArrayList<States> salida = new ArrayList<>();
+			ArrayList<Point> escribe = new ArrayList<>();
+			for( HashSet<Integer> conjunto : ultimo){
+				System.out.println(conjunto);
+			}
+			for( HashSet<Integer> conjunto : ultimo){
+				String nuevoNombre = "";
+				boolean acc = false;
+				boolean ent=false;
+				int siCero=0, siUno=0;
+
+				//creamos el nuevo nombre concatenando los nombres de los que formal el estado
+				for(Integer c:conjunto){
+					nuevoNombre+= fda.get(c).getName();
+					System.out.println(nuevoNombre);
+					acc = fda.get(c).esAceptacion() ? true:acc;
+					ent = fda.get(c).esEntrada() ? true:ent;
+					siCero = fda.get(c).getOutputs().get(0).getReadsBit()== 0 ? fda.get(c).getOutputs().get(0).getWritesBit() :fda.get(c).getOutputs().get(1).getWritesBit();
+					siUno = fda.get(c).getOutputs().get(0).getReadsBit() == 1 ? fda.get(c).getOutputs().get(0).getWritesBit() :fda.get(c).getOutputs().get(1).getWritesBit();
+
+				}
+				States	nuevo = new States(nuevoNombre,acc,ent);
+				salida.add(nuevo);
+				escribe.add(new Point(siCero,siUno));
+			}
+
+			//hacemos las transiciones de acuerdo al nuevo esquema
+
+			for(int y=0;y< salida.size();y++){
+					Point trans = opciones.get(y);
+					System.out.println(trans);
+					salida.get(y).crateOuts(salida.get((int)trans.getX()).getName(),0,(int)escribe.get(y).getX());
+					salida.get(y).crateOuts(salida.get((int)trans.getY()).getName(),1,(int)escribe.get(y).getY());
+			}
+
+			return salida;
+
+    }
+
+
 
 }

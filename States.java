@@ -14,10 +14,24 @@ public class States{
 		this.aceptacion=false;
 	}
 
+	public States(String n,boolean acep, boolean ent){
+		this.name=n;
+		this.outs=new ArrayList<Outputs>();
+		this.entrada=ent;
+		this.aceptacion=acep;
+	}
+
 	public void crateOuts(String name ,int reads ,int writes){
 
 		outs.add( new Outputs(name,reads,writes) );
 	}
+
+	public void crateOut(String name ,int reads ,int writes, boolean entrada, boolean aceptacion){
+		this.entrada=entrada;
+		this.aceptacion=aceptacion;
+		outs.add( new Outputs(name,reads,writes) );
+	}
+
 	public void getInfo(){
 		for (Outputs o : outs) {
 				System.out.println("Estado: "+name+ o.getInfo()+
