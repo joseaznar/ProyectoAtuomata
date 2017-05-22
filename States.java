@@ -2,7 +2,6 @@ import java.util.*;
 
 public class States{
 	private ArrayList<Outputs> outs;
-	private int numStates;
 	private String name;
 	private boolean entrada;
 	private boolean aceptacion;
@@ -11,7 +10,6 @@ public class States{
 	public States(String n){
 		this.name=n;
 		this.outs=new ArrayList<Outputs>();
-		this.numStates=0;
 		this.entrada=false;
 		this.aceptacion=false;
 	}
@@ -19,7 +17,6 @@ public class States{
 	public void crateOuts(String name ,int reads ,int writes){
 
 		outs.add( new Outputs(name,reads,writes) );
-		numStates++;
 	}
 	public void getInfo(){
 		for (Outputs o : outs) {
@@ -29,9 +26,6 @@ public class States{
 		}
 
 
-	}
-	public int getNumStates(){
-		return numStates;
 	}
 	public boolean esEntrada(){
 		return entrada;
@@ -74,6 +68,9 @@ public class States{
 			}
 		}
 		return reads0+tab+reads1;
+	}
+	public ArrayList<Outputs> getOutputs(){
+		return outs;
 	}
 
 }

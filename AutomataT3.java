@@ -5,10 +5,14 @@ public class AutomataT3{
 	private ArrayList<States> estados;
 	private int names;
 	private boolean isDeterministic;
+	private String entradas="";
+	private String aceptacion="";
 
 
 
 	public AutomataT3(){
+		//name es una variable que se usa para nombrar los estados
+		// apartir de su valor en ascii, el valor 65 pertenece a "A"
 		names=65;
 		estados = new  ArrayList<States>();
 		isDeterministic=true;
@@ -21,8 +25,8 @@ public class AutomataT3{
 		 BufferedReader br = new BufferedReader(fileReader);
 			String line = br.readLine();
 			String [] data, splitEstados;
-			String entradas="";
-			String aceptacion="";
+			entradas="";
+			aceptacion="";
 			String estadosRev="";
 			int auxNames=names;
 			int row=0;
@@ -136,12 +140,10 @@ public class AutomataT3{
 
 
 
-
 			System.out.println("Estados de entrada: "+entradas);
 			System.out.println("Estados de aceptación: "+aceptacion );
 			System.out.println("Estados: "+estadosRev);
-			auxNames-=names;
-			System.out.println(""+auxNames);
+			System.out.println("Es determinista: "+((isDeterministic) ? "Si" : "No") );
 			//si el numero de estados descritos en la tabla
 			//es menor al numero de estados descritos en la tabla, significa que existe un estado vacio
 			if(estadosRev.length()-auxNames>0){
@@ -153,11 +155,13 @@ public class AutomataT3{
 				estados.add(aux);
 			}
 
+
 			for (States s: estados) {
 				s.soyEntrada(entradas);
 				s.soyAceptacion(aceptacion);
 				s.getInfo();
 			}
+
 
 
 			br.close();
@@ -172,12 +176,116 @@ public class AutomataT3{
 }
 
 public void GetDeterministicAut(){
+
 	AutomataT3 aux = new AutomataT3();
 	if(isDeterministic){
 		// si es determinista se devuelve el mismo automata que se le dio como input
 		writeAutomata(this.estados,"Deterministic");
 	}else{
+		/////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////
+		// parte para determinar automatas tipo 3, no determinados
+		//////////////////////////////////////////////////////////////
+		// aglutinar estados de entrada
+		//guardar outputs para aglutinar
 
+		String newStateName="";
+
+
+
+		//ArrayList<States> undefinedStates= new  ArrayList<States>();
+		ArrayList<String> undefinedStates= new  ArrayList<String>();
+		ArrayList<Outputs> auxOuts= new  ArrayList<Outputs>();
+		ArrayList<String> definedStates= new  ArrayList<String>();
+
+		for(States s: estados){
+
+			if(s.esEntrada()){
+				//se recopilan sus outputs para menejarse despues
+				for(Outputs o: s.getOutputs()){
+					auxOuts.add(o);
+				}
+
+
+				//la primer entrada
+
+				if(newStateName.length()==0){
+					newStateName=s.getName();
+
+				}else{
+					String auxNameState="";
+					int i=0;
+
+					// se considera que los nombres ya van arreglados
+					// como es el aglutinamiento los nombres aun son de un caracter
+					char aux1= s.getName().charAt(0);
+
+
+					while(i<newStateName.length() && aux1>newStateName.charAt(i)){
+						auxNameState+=newStateName.charAt(i);
+						i++;
+					}
+					if(i==newStateName.length()){
+						newStateName+=s.getName();
+					}else{
+						newStateName=aux1+s.getName()+newStateName.charAt(i);
+					}
+
+				}
+				/////////////////////
+				///
+
+			}
+
+		}
+
+		//creando el primer estado de nuestro automata
+		System.out.println("///////////////////////////////////////");
+		aux.setState(newStateName,auxOuts,aceptacion, entradas);
+
+
+				definedStates.add(newStateName);
+				for(States s: aux.getSatates()){
+					for(Outputs o: s.getOutputs()){
+						if(!definedStates.contains(o.getNextStateName())){
+							undefinedStates.add(o.getNextStateName());
+						}
+					}
+				}
+
+
+				////// se insertan los estados no definidos
+				while(!undefinedStates.isEmpty()){
+					System.out.println("Undefined size:"+undefinedStates.size());
+
+					Object [] auxStates=undefinedStates.toArray();
+
+					for (int i=0; i<auxStates.length ; i++) {
+						System.out.println("Undefined State name:" + auxStates[i].toString());
+						aux.addUndefinedState(createUndefinedState(auxStates[i].toString()));
+						definedStates.add(auxStates[i].toString());
+					}
+					undefinedStates=new  ArrayList<String>();
+					for(States s: aux.getSatates()){
+						System.out.println("State Name: "+ s.getName());
+						String auxOutName="";
+						for(Outputs o: s.getOutputs()){
+							if(!definedStates.contains(o.getNextStateName())){
+								auxOutName+=o.getNextStateName();
+							}
+						}
+						undefinedStates.add(sortLabels(auxOutName));
+
+					}
+				}
+
+
+
+
+
+		//Revisar estados
+		aux.getStatesInfo();
 	}
 }
 
@@ -217,5 +325,112 @@ public void writeAutomata(ArrayList<States> states, String name){
 }
 }
 
+// para crear los estados cuando se va determinando
+public void setState(String name, ArrayList<Outputs> out, String aceptacion, String entrada){
+	States auxS= new States(name);
+	String auxNameR0 ="";
+	String auxNameR1 ="";
+	int auxW0=0;
+	int auxW1=0;
+	for(Outputs o: out){
+		// juntar todos los outputs generados y aglutinarlos por lo que leen
+		if(o.getReadsBit()==0){
+			auxNameR0+=o.getNextStateName();
+			if(o.getWritesBit()==1){
+				auxW0=1;
+			}
+		}
+
+		if(o.getReadsBit()==1){
+			auxNameR1+=o.getNextStateName();
+			if(o.getWritesBit()==1){
+				auxW1=1;
+			}
+		}
+	}
+
+	auxNameR0= sortLabels(auxNameR0);
+	auxNameR1= sortLabels(auxNameR1);
+
+
+	auxS.crateOuts(auxNameR0,0,auxW0);
+	auxS.crateOuts(auxNameR1,1,auxW1);
+	auxS.soyEntrada(entrada);
+	auxS.soyAceptacion(aceptacion);
+
+	this.estados.add(auxS);
+
+}
+/////mantener en orden alfabetico los strings
+public String sortLabels(String input){
+	String res="";
+	char arrChar[]= new char[input.length()];
+	for (int i=0; i<input.length(); i++) {
+		arrChar[i]=input.charAt(i);
+	}
+	Arrays.sort(arrChar);
+	for (int i=0; i<arrChar.length; i++) {
+		if(i>0 && arrChar[i-1]!=arrChar[i]){
+			res+=arrChar[i];
+		}else if(i==0) {
+			res+=arrChar[i];
+		}
+
+	}
+	return res;
+}
+public void getStatesInfo(){
+	for(States s: estados){
+		s.getInfo();
+	}
+}
+public ArrayList<States> getSatates(){
+	return estados;
+}
+
+public States createUndefinedState(String name){
+	States res= new States(name);
+	ArrayList<Outputs> auxOuts= new  ArrayList<Outputs>();
+	String auxNameR0 ="";
+	String auxNameR1 ="";
+	int auxW0=0;
+	int auxW1=0;
+
+	for(States s:estados){
+		// se considera que un automata al definirse tiene nombres de un caracter de longitud
+		if( name.indexOf(s.getName().charAt(0))>=0 ){
+			for(Outputs o: s.getOutputs()){
+				// juntar todos los outputs generados y aglutinarlos por lo que leen
+				if(o.getReadsBit()==0){
+					auxNameR0+=o.getNextStateName();
+					if(o.getWritesBit()==1){
+						auxW0=1;
+					}
+				}
+
+				if(o.getReadsBit()==1){
+					auxNameR1+=o.getNextStateName();
+					if(o.getWritesBit()==1){
+						auxW1=1;
+					}
+				}
+			}
+		}
+	}
+	auxNameR0= sortLabels(auxNameR0);
+	auxNameR1= sortLabels(auxNameR1);
+
+
+	res.crateOuts(auxNameR0,0,auxW0);
+	res.crateOuts(auxNameR1,1,auxW1);
+	res.soyEntrada(entradas);
+	res.soyAceptacion(aceptacion);
+
+	return res;
+}
+
+public void addUndefinedState(States  s){
+	estados.add(s);
+}
 
 }
