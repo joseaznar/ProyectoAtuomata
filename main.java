@@ -7,7 +7,7 @@ public class main {
    public static void main(String []args){
 
 		 AutomataT3 aut= new AutomataT3();
-     String file=("test.txt");
+     String file=("Problema 1 Proyecto Final.txt");
      aut.setAutomat(file);
 
      aut = aut.GetDeterministicAut();

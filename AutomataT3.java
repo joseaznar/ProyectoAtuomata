@@ -532,10 +532,11 @@ public ArrayList<States> minimiza(ArrayList<States> fda) {
 
 	int index = 0;
 	ArrayList<Point> opciones;
+	HashSet<HashSet<Integer>> pOriginal;
 	//procedemos a reducir
 	do {
 
-	    HashSet<HashSet<Integer>> pOriginal = particiones.get(index);
+	    pOriginal = particiones.get(index);
 	    //HashSet<String> pSiguiente =  new HashSet<String>();
 	    opciones = new ArrayList<>();
 	    //ArrayList<Outputs> temp = new ArrayList<>();
@@ -575,7 +576,7 @@ public ArrayList<States> minimiza(ArrayList<States> fda) {
 
 				String entraCero = s.getOutputs().get(0).getReadsBit()== 0 ? s.getOutputs().get(0).getNextStateName() : s.getOutputs().get(1).getNextStateName();
 				String entraUno = s.getOutputs().get(0).getReadsBit() == 1 ? s.getOutputs().get(0).getNextStateName() : s.getOutputs().get(1).getNextStateName();
-
+				System.out.println(entraCero+entraUno);
 				int a=0,b=0;
 				int i=0;
 				//buscamos a que particiones pertenecen los estados a los que va
@@ -590,9 +591,9 @@ public ArrayList<States> minimiza(ArrayList<States> fda) {
 				}
 				Point id = new Point(a,b);
 				//int cual=0;
-				if(!opciones.contains(id)){
-		    	lista.get(opciones.indexOf(id)).add(k);
-				}
+				//if(!opciones.contains(id)){
+		    lista.get(opciones.indexOf(id)).add(k);
+				//}
 				k++;
 	    }
 	    //CREAMOS LA NUEVA PARTICION
@@ -638,15 +639,20 @@ public ArrayList<States> minimiza(ArrayList<States> fda) {
 			}
 
 			//hacemos las transiciones de acuerdo al nuevo esquema
-
+			AutomataT3 Aux = new AutomataT3();
 			for(int y=0;y< salida.size();y++){
 					Point trans = opciones.get(y);
 					System.out.println(trans);
 					salida.get(y).crateOuts(salida.get((int)trans.getX()).getName(),0,(int)escribe.get(y).getX());
 					salida.get(y).crateOuts(salida.get((int)trans.getY()).getName(),1,(int)escribe.get(y).getY());
+					Aux.addUndefinedState(salida.get(y));
 			}
 
-			return salida;
+			Aux=Aux.renameIt(Aux);
+
+			writeAutomata(Aux.getSatates(),"Minimizado");
+
+			return Aux.getSatates();
 
     }
 

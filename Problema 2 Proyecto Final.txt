@@ -1,0 +1,22 @@
+A,B	0	C	1
+B	0	A	0
+A	0	C	1
+
+////////////////////////////////////
+Autómata determinado
+A,B,C	0	A,B,C	0
+B	0	A	0
+A	0	C	1
+C	0	C	0
+
+
+
+
+///////////////////////////////
+Autómata reducido
+
+
+A,B,C	0	A,B,C	0
+B	0	A	0
+A	0	C	1
+C	0	C	0
