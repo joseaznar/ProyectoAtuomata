@@ -1,0 +1,86 @@
+
+import java.util.*;
+
+
+public class ExpRegular {
+    
+    public String expReg(AutomataT3 aut){
+        AutomataT3 nuevoAut=aut;
+        ArrayList<States> estados = aut.getStates(), sigEstados = new ArrayList<States>();
+        String er = "", s1="", s2="", s3="", s4="", nom, nom2="";
+        int tam, k2;
+        States entrada = estados.get(0), aceptacion = estados.get(0), estadoAux;
+        ArrayList<States> nuevoEstados = estados;
+        
+        //Identifica cual estado es de entrada y cual es de aceptación
+        tam = nuevoEstados.size();
+        for(int i=0; i<tam; i++){
+            estadoAux = nuevoEstados.get(i);
+            if(estadoAux.esAceptacion()){
+                entrada = estadoAux;
+            }
+            if(estadoAux.esEntrada()){
+                aceptacion = estadoAux;
+            }
+        }
+        
+        //Eliminar los estados que no sean de aceptación ni de entrada
+        //y actualizar sus transiciones
+        for(int i=0; i<tam; i++){
+            estadoAux = nuevoEstados.get(i);
+            sigEstados = estadoAux.getNextStates(aut);
+            for(int j=0; j<sigEstados.size(); j++){
+                if(!sigEstados.get(j).esAceptacion() && !sigEstados.get(j).esEntrada()){
+                    //Entonctrar las nuevas transiciones
+                    s1 = String.valueOf(estadoAux.getTransEstado(sigEstados.get(j)));
+                    s1=s1+ String.valueOf(sigEstados.get(j).getTransEstado(sigEstados.get(j)));
+                    s1=s1+"*"+String.valueOf(sigEstados.get(j).getTransEstado(estadoAux));
+                    s2 = String.valueOf(estadoAux.getTransEstado(sigEstados.get(j)));
+                    s2=s2+ String.valueOf(sigEstados.get(j).getTransEstado(sigEstados.get(j)));
+                    s2=s2+"*"+String.valueOf(sigEstados.get(j).getTransEstado(sigEstados.get(j).getNextStates(aut).get(0)));
+                    s3 = String.valueOf(sigEstados.get(j).getNextStates(aut).get(0).getTransEstado(sigEstados.get(j)));
+                    s3=s3+ String.valueOf(sigEstados.get(j).getTransEstado(sigEstados.get(j)));
+                    s3=s3+"*"+String.valueOf(sigEstados.get(j).getTransEstado(sigEstados.get(j).getNextStates(aut).get(0)));
+                    s4 = String.valueOf(sigEstados.get(j).getNextStates(aut).get(0).getTransEstado(sigEstados.get(j)));
+                    s4=s4+ String.valueOf(sigEstados.get(j).getTransEstado(sigEstados.get(j)));
+                    s4=s4+"*"+String.valueOf(sigEstados.get(j).getTransEstado(estadoAux));
+                    nuevoAut.getStates().remove(sigEstados.get(j));
+                    //Poner las nuevas transiciones en donde corresponden
+                    nom = estadoAux.getName();
+                    for(int k=0; k<estadoAux.getOutputs().size(); k++){
+                        if(estadoAux.getOutputs().get(k).getNextStateName().equals(nom)){
+                            estadoAux.getOutputs().get(k).setTransicion(s1);
+                        }
+                    }
+                    nom = sigEstados.get(j).getNextStates(nuevoAut).get(0).getName();
+                    for(int k=0; k<sigEstados.get(j).getNextStates(nuevoAut).get(0).getOutputs().size(); k++){
+                        if(sigEstados.get(j).getNextStates(nuevoAut).get(0).getOutputs().get(j).getNextStateName().equals(nom)){
+                            estadoAux.getOutputs().get(k).setTransicion(s2);
+                            k2=k;
+                            nom2 = nom;
+                        }
+                    }
+                    nom = sigEstados.get(j).getNextStates(aut).get(0).getName();
+                    for(int k=0; k<sigEstados.get(j).getNextStates(nuevoAut).get(0).getOutputs().size(); k++){
+                        if(sigEstados.get(j).getNextStates(nuevoAut).get(0).getOutputs().get(j).getNextStateName().equals(nom)){
+                            estadoAux.getOutputs().get(k).setTransicion(s3);
+                        }
+                    }
+                    nom = estadoAux.getName();
+                    for(int k=0; k<sigEstados.get(j).getNextStates(nuevoAut).get(0).getOutputs().size(); k++){
+                        if(sigEstados.get(j).getNextStates(nuevoAut).get(0).getOutputs().get(j).getNextStateName().equals(nom)){
+                            estadoAux.getOutputs().get(k).setTransicion(s4);
+                        }
+                    }
+                }
+            }
+        }
+        //Encontrar la expresión regular, uniendo las transiciones que quedan entre el estado de aceptación y el de entrada
+        for(int i=0; i<nuevoAut.getStates().size(); i++){
+            er= nuevoAut.getStates().get(0).getOutputs().get(0).getTransicion();
+            er = er + ""+nuevoAut.getStates().get(1).getOutputs().get(0).getTransicion();
+        }
+        return er;
+    }
+    
+}
